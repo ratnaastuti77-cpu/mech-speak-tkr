@@ -11,9 +11,9 @@ st.set_page_config(page_title="MECH-SPEAK AI - TKR", page_icon="🔧", layout="c
 st.title("🔧 MECH-SPEAK AI")
 st.subheader("Guided English Speaking Simulator for Automotive (TKR)")
 
-api_key = st.secrets.get("GEMINI_API_KEY", "")
+api_key = st.secrets.get("GEMINI_API_KEY", "").strip()
 if not api_key:
-    api_key = st.sidebar.text_input("Masukkan Gemini API Key:", type="password")
+    api_key = st.sidebar.text_input("Masukkan Gemini API Key:", type="password").strip()
 
 if not api_key:
     st.warning("⚠️ Silakan masukkan Gemini API Key terlebih dahulu.")
@@ -94,27 +94,31 @@ audio = mic_recorder(
     start_prompt="🔴 Mulai Bicara (Record)",
     stop_prompt="⏹️ Selesai Bicara (Stop)",
     just_once=True,
+    format="wav",
     key=f"mic_{len(st.session_state.messages)}"
 )
 
 if audio:
     with st.spinner("Mendengarkan dan memproses suara kamu..."):
-        transcribe_resp = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[
-                "Transcribe this English speech accurately. Return ONLY the spoken words without any extra explanation.",
-                types.Part.from_bytes(data=audio["bytes"], mime_type="audio/webm")
-            ]
-        )
-        student_text = transcribe_resp.text.strip()
-        st.session_state.messages.append({"role": "Student", "text": student_text})
-        
-        ai_data = get_ai_response(st.session_state.messages, scenarios[selected_scenario])
-        customer_text = ai_data["customer_reply"]
-        st.session_state.messages.append({"role": "Customer", "text": customer_text})
-        st.session_state.guides = ai_data["options"]
-        st.session_state.audio_bytes = text_to_speech(customer_text)
-        st.rerun()
+        try:
+            transcribe_resp = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    "Listen to this audio and transcribe the English speech accurately. Return ONLY the spoken words without any extra explanation.",
+                    types.Part.from_bytes(data=audio["bytes"], mime_type="audio/wav")
+                ]
+            )
+            student_text = transcribe_resp.text.strip()
+            st.session_state.messages.append({"role": "Student", "text": student_text})
+            
+            ai_data = get_ai_response(st.session_state.messages, scenarios[selected_scenario])
+            customer_text = ai_data["customer_reply"]
+            st.session_state.messages.append({"role": "Customer", "text": customer_text})
+            st.session_state.guides = ai_data["options"]
+            st.session_state.audio_bytes = text_to_speech(customer_text)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Detail Error: {e}")
 
 st.markdown("---")
 col1, col2 = st.columns(2)
