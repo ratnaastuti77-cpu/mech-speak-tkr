@@ -19,7 +19,7 @@ if not api_key:
     st.warning("⚠️ Silakan masukkan Gemini API Key terlebih dahulu.")
     st.stop()
 
-client = genai.Client(api_key=api_key)
+client = genai.Client(api_key=api_key,
 
 scenarios = {
     "1. Engine Overheating (Mesin Cepat Panas)": "You are Mr. John, an expatriate customer whose car engine is overheating and releasing white smoke. You are worried and asking the student (Service Advisor) for help.",
