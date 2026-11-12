@@ -1,4 +1,4 @@
 streamlit
-google-genai
+grog
 gTTS
 streamlit-mic-recorder
