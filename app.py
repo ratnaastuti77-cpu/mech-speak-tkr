@@ -1,6 +1,5 @@
 import streamlit as st
-from google import genai
-from google.genai import types
+from groq import Groq
 from gtts import gTTS
 from streamlit_mic_recorder import mic_recorder
 import io
@@ -11,15 +10,15 @@ st.set_page_config(page_title="MECH-SPEAK AI - TKR", page_icon="🔧", layout="c
 st.title("🔧 MECH-SPEAK AI")
 st.subheader("Guided English Speaking Simulator for Automotive (TKR)")
 
-api_key = st.secrets.get("GEMINI_API_KEY", "").strip()
+api_key = st.secrets.get("GROQ_API_KEY", "").strip()
 if not api_key:
-    api_key = st.sidebar.text_input("Masukkan Gemini API Key:", type="password").strip()
+    api_key = st.sidebar.text_input("Masukkan Groq API Key:", type="password").strip()
 
 if not api_key:
-    st.warning("⚠️ Silakan masukkan Gemini API Key terlebih dahulu.")
+    st.warning("⚠️ Silakan masukkan Groq API Key terlebih dahulu.")
     st.stop()
 
-client = genai.Client(api_key=api_key, http_options={'api_version': 'v1alpha'})
+client = Groq(api_key=api_key)
 
 scenarios = {
     "1. Engine Overheating (Mesin Cepat Panas)": "You are Mr. John, an expatriate customer whose car engine is overheating and releasing white smoke. You are worried and asking the student (Service Advisor) for help.",
@@ -49,7 +48,7 @@ def text_to_speech(text):
     return fp.read()
 
 def get_ai_response(history, scenario_desc):
-    prompt = f"""
+    system_prompt = f"""
     Roleplay Context: {scenario_desc}
     The user is a beginner Indonesian vocational high school student (TKR / Automotive) acting as a Service Advisor.
     Keep your response short (1-2 simple sentences) and natural as a customer.
@@ -64,16 +63,17 @@ def get_ai_response(history, scenario_desc):
         ]
     }}
     """
-    contents = [prompt]
+    chat_messages = [{"role": "system", "content": system_prompt}]
     for msg in history:
-        contents.append(f"{msg['role']}: {msg['text']}")
+        role = "user" if msg["role"] == "Student" else "assistant"
+        chat_messages.append({"role": role, "content": msg["text"]})
         
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=contents,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=chat_messages,
+        response_format={"type": "json_object"}
     )
-    return json.loads(response.text)
+    return json.loads(response.choices[0].message.content)
 
 st.markdown("---")
 for msg in st.session_state.messages:
@@ -101,14 +101,14 @@ audio = mic_recorder(
 if audio:
     with st.spinner("Mendengarkan dan memproses suara kamu..."):
         try:
-            transcribe_resp = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    "Listen to this audio and transcribe the English speech accurately. Return ONLY the spoken words without any extra explanation.",
-                    types.Part.from_bytes(data=audio["bytes"], mime_type="audio/wav")
-                ]
+            audio_file = io.BytesIO(audio["bytes"])
+            audio_file.name = "speech.wav"
+            transcription = client.audio.transcriptions.create(
+                file=audio_file,
+                model="whisper-large-v3",
+                language="en"
             )
-            student_text = transcribe_resp.text.strip()
+            student_text = transcription.text.strip()
             st.session_state.messages.append({"role": "Student", "text": student_text})
             
             ai_data = get_ai_response(st.session_state.messages, scenarios[selected_scenario])
@@ -138,8 +138,11 @@ with col1:
                 2. Apresiasi penggunaan istilah otomotif
                 3. Koreksi kata/kalimat yang kurang tepat dan cara pengucapan yang benar.
                 """
-                eval_resp = client.models.generate_content(model="gemini-2.5-flash", contents=eval_prompt)
-                st.session_state.feedback = eval_resp.text
+                eval_resp = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": eval_prompt}]
+                )
+                st.session_state.feedback = eval_resp.choices[0].message.content
 
 with col2:
     if st.button("🔄 Ulangi Simulasi dari Awal"):
