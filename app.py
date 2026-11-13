@@ -94,19 +94,73 @@ bank_wajib = {
     ]
 }
 
+def bersihkan_teks(teks):
+    return re.sub(r'[^\w\s]', '', teks).strip().lower()
+
 # 1. Input Identitas & Jurusan Siswa
-nama_siswa = st.text_input("Nama Lengkap Siswa / Kelompok:", placeholder="Contoh: Budi Santoso (atau Kelompok 1)")
-jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()))
+nama_siswa = st.text_input("Nama Lengkap Siswa / Kelompok:", key="input_nama", placeholder="Contoh: Budi Santoso (atau Kelompok 1)")
+jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()), key="pilih_jurusan")
 
 daftar_soal = bank_wajib[jurusan]
 total_soal = len(daftar_soal)
 
-# Inisialisasi Sesi Siswa (Mulai berurutan dari Soal Nomor 1)
+# Inisialisasi Sesi Siswa
 if "index_soal" not in st.session_state or st.session_state.get("jurusan_aktif") != jurusan:
     st.session_state.index_soal = 0
     st.session_state.jurusan_aktif = jurusan
     st.session_state.hasil_terakhir = None
     st.session_state.skor_sesi = []
+    st.session_state.pesan_error = ""
+
+# Fungsi Callback Saat Tombol Kirim Diklik (Pasti Menambah Nomor Soal & Mengosongkan Input)
+def proses_jawaban():
+    nama_val = st.session_state.get("input_nama", "").strip()
+    jawaban_val = st.session_state.get("input_jawaban", "").strip()
+    idx_sekarang = st.session_state.index_soal
+
+    if not nama_val:
+        st.session_state.pesan_error = "⚠️ Isi **Nama Lengkap Siswa / Kelompok** di bagian atas terlebih dahulu!"
+        return
+    if not jawaban_val:
+        st.session_state.pesan_error = "⚠️ Silakan ketik jawabanmu terlebih dahulu!"
+        return
+
+    st.session_state.pesan_error = ""
+    soal_sekarang = daftar_soal[idx_sekarang]
+
+    bersih_siswa = bersihkan_teks(jawaban_val)
+    bersih_kunci = bersihkan_teks(soal_sekarang["kunci"])
+
+    kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
+    skor = round(kemiripan * 100)
+    nama_bersih = nama_val.title()
+
+    # Simpan ke rekap nilai bersama
+    rekap_kelas.append({
+        "nama": nama_bersih,
+        "jurusan": jurusan,
+        "no_soal": idx_sekarang + 1,
+        "soal": soal_sekarang["audio"],
+        "jawaban": jawaban_val,
+        "skor": skor
+    })
+
+    st.session_state.skor_sesi.append(skor)
+    st.session_state.hasil_terakhir = {
+        "nomor": idx_sekarang + 1,
+        "nama": nama_bersih,
+        "skor": skor,
+        "jawaban": jawaban_val,
+        "kunci": soal_sekarang["kunci"]
+    }
+
+    # Pindah ke nomor soal berikutnya & kosongkan kotak ketik
+    st.session_state.index_soal += 1
+    st.session_state.input_jawaban = ""
+
+# Tampilkan pesan peringatan jika lupa isi nama/jawaban
+if st.session_state.get("pesan_error"):
+    st.warning(st.session_state.pesan_error)
 
 # Menampilkan Umpan Balik Skor Soal Sebelumnya
 if st.session_state.get("hasil_terakhir"):
@@ -114,52 +168,9 @@ if st.session_state.get("hasil_terakhir"):
     st.markdown(f"### 🏆 Skor Soal #{hasil['nomor']} ({hasil['nama']}): **{hasil['skor']} / 100**")
     if hasil["skor"] == 100:
         st.success(f"🎉 Sempurna! Jawabanmu (`{hasil['jawaban']}`) 100% tepat!")
-        st.balloons()
     elif hasil["skor"] >= 75:
         st.warning(f"👍 Hampir tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
     else:
         st.error(f"💪 Belum tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
 
-def bersihkan_teks(teks):
-    return re.sub(r'[^\w\s]', '', teks).strip().lower()
-
 # 2. Area Mengerjakan Soal (Berurutan Nomor 1 sampai 10)
-if st.session_state.index_soal < total_soal:
-    idx = st.session_state.index_soal
-    soal = daftar_soal[idx]
-
-    st.progress(idx / total_soal)
-    st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
-
-    if "Listen & Answer" in soal["tipe"]:
-        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1–2 kata)** dalam Bahasa Inggris!")
-    else:
-        st.info("👂 Dengarkan audio berikut dengan saksama, lalu **ketik persis kata/kalimat yang kamu dengar**!")
-
-    kecepatan = st.checkbox("🐢 Putar Audio Lebih Lambat (Slow Mode)", key=f"slow_{idx}")
-
-    tts = gTTS(text=soal["audio"], lang='en', slow=kecepatan)
-    audio_fp = io.BytesIO()
-    tts.write_to_fp(audio_fp)
-    audio_fp.seek(0)
-    st.audio(audio_fp, format="audio/mp3")
-
-    st.markdown("---")
-    with st.form(key=f"form_soal_{idx}", clear_on_submit=True):
-        jawaban_siswa = st.text_input("⌨️ Ketik jawabanmu di sini:", placeholder="Tulis jawaban dalam Bahasa Inggris...")
-        submit_btn = st.form_submit_button("✅ Kirim Jawaban & Lanjut Soal Berikutnya", type="primary", use_container_width=True)
-
-    if submit_btn:
-        if not nama_siswa.strip():
-            st.warning("⚠️ Isi **Nama Lengkap Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
-        elif not jawaban_siswa.strip():
-            st.warning("⚠️ Silakan ketik jawabanmu terlebih dahulu!")
-        else:
-            bersih_siswa = bersihkan_teks(jawaban_siswa)
-            bersih_kunci = bersihkan_teks(soal["kunci"])
-
-            kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
-            skor = round(kemiripan * 100)
-
-            nama_bersih = nama_siswa.strip().title()
-
