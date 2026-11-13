@@ -5,6 +5,7 @@ import io
 import random
 import difflib
 import re
+import pandas as pd
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
@@ -14,6 +15,13 @@ st.caption("Latihan Listening & Spelling Kejuruan English Club")
 
 # Inisialisasi Gemini API
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+# Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
+@st.cache_resource
+def get_rekap_nilai():
+    return []
+
+rekap_kelas = get_rekap_nilai()
 
 # Bank Soal Wajib (Versi Simple untuk Semua Jurusan)
 bank_wajib = {
@@ -123,8 +131,10 @@ def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
 if st.button("✅ Periksa Jawaban & Lihat Skor", type="primary", use_container_width=True):
-    if not jawaban_siswa.strip():
-        st.warning("Silakan ketik jawabanmu terlebih dahulu!")
+    if not nama_siswa.strip():
+        st.warning("⚠️ Isi **Nama Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
+    elif not jawaban_siswa.strip():
+        st.warning("⚠️ Silakan ketik jawabanmu terlebih dahulu!")
     else:
         bersih_siswa = bersihkan_teks(jawaban_siswa)
         bersih_kunci = bersihkan_teks(soal["kunci"])
@@ -132,7 +142,16 @@ if st.button("✅ Periksa Jawaban & Lihat Skor", type="primary", use_container_w
         kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
         skor = round(kemiripan * 100)
         
-        st.markdown(f"### 🏆 Skor {nama_siswa if nama_siswa else 'Kamu'}: **{skor} / 100**")
+        # Simpan nilai ke rekap bersama
+        rekap_kelas.append({
+            "Nama": nama_siswa.strip().title(),
+            "Jurusan": jurusan.split(" ")[0],
+            "Soal": soal["audio"],
+            "Jawaban Siswa": jawaban_siswa.strip(),
+            "Skor": skor
+        })
+        
+        st.markdown(f"### 🏆 Skor {nama_siswa.strip().title()}: **{skor} / 100**")
         
         if skor == 100:
             st.success("🎉 Sempurna! Ejaan (*spelling*) dan pendengaranmu 100% tepat!")
@@ -141,3 +160,32 @@ if st.button("✅ Periksa Jawaban & Lihat Skor", type="primary", use_container_w
             st.warning(f"👍 Hampir sempurna! Ada sedikit perbedaan huruf.\n\n**Kunci Jawaban:** `{soal['kunci']}`")
         else:
             st.error(f"💪 Terus berlatih! Dengarkan lagi audionya.\n\n**Teks Audio Asli:** `{soal['audio']}`\n\n**Kunci Jawaban:** `{soal['kunci']}`")
+
+# 4. Panel Rekap Nilai & Leaderboard untuk Pembina
+st.markdown("---")
+with st.expander("📊 Rekap Nilai & Papan Peringkat Kelas (Review Pembina)"):
+    if len(rekap_kelas) > 0:
+        df = pd.DataFrame(rekap_kelas)
+        
+        # Ringkasan total skor per siswa
+        leaderboard = df.groupby(["Nama", "Jurusan"], as_index=False).agg(
+            Jumlah_Soal=("Skor", "count"),
+            Rata_Rata=("Skor", "mean"),
+            Total_Poin=("Skor", "sum")
+        ).sort_values(by="Total_Poin", ascending=False)
+        leaderboard["Rata_Rata"] = leaderboard["Rata_Rata"].round(1)
+        
+        st.subheader("🏆 Klasemen Sementara")
+        st.dataframe(leaderboard, use_container_width=True, hide_index=True)
+        
+        # Tombol Download ke Excel/CSV
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Semua Detail Jawaban & Nilai (.CSV)",
+            data=csv,
+            file_name="rekap_listen_and_write.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    else:
+        st.info("Belum ada siswa yang mengirimkan jawaban. Nilai akan otomatis muncul di sini saat siswa menekan tombol Periksa Jawaban.")
