@@ -17,7 +17,7 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 # Bank Soal Wajib (Akan Diacak untuk Setiap Siswa)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
-        {"tipe": "Repeat Sentence", "audio": "Please inspect the brake pads and check the engine oil level.", "kunci": "Please inspect the brake pads and check the engine oil level."},
+        {"tipe": "Repeat Sentence", "audio": "WRENCH.", "kunci": "WRENCH."},
         {"tipe": "Repeat Sentence", "audio": "We need to replace the car battery because the voltage is too low.", "kunci": "We need to replace the car battery because the voltage is too low."},
         {"tipe": "Answer Short Question", "audio": "What component in a car engine ignites the air and fuel mixture?", "kunci": "Spark plug (busi)."},
         {"tipe": "Answer Short Question", "audio": "What tool do mechanics use to tighten bolts and nuts?", "kunci": "Wrench / Spanner (kunci pas)."}
