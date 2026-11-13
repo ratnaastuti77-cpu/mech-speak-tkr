@@ -16,8 +16,7 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # Bank Soal Wajib (Akan Diacak untuk Setiap Siswa)
 bank_wajib = {
-    "TKR (Teknik Kendaraan Ringan)": [
-        bank_wajib = {
+   bank_wajib = {
     "TKR (Teknik Kendaraan Ringan) - Basic": [
         {"tipe": "Repeat Sentence", "audio": "TIRE.", "kunci": "TIRE."},
         {"tipe": "Repeat Sentence", "audio": "ENGINE.", "kunci": "ENGINE."},
@@ -29,7 +28,8 @@ bank_wajib = {
         {"tipe": "Answer Short Question", "audio": "Where do we put gasoline in a car?", "kunci": "Fuel tank (tangki bahan bakar)."},
         {"tipe": "Answer Short Question", "audio": "What do we turn on to see at night?", "kunci": "Headlights (lampu depan)."},
         {"tipe": "Answer Short Question", "audio": "What liquid cools the car engine?", "kunci": "Coolant / Water (air radiator)."}
-    ],
+    ]
+}
     "TSM (Teknik Sepeda Motor)": [
         {"tipe": "Repeat Sentence", "audio": "Please adjust the drive chain tension and check the tire pressure.", "kunci": "Please adjust the drive chain tension and check the tire pressure."},
         {"tipe": "Repeat Sentence", "audio": "Regular fuel injection cleaning keeps the motorcycle engine running smoothly.", "kunci": "Regular fuel injection cleaning keeps the motorcycle engine running smoothly."},
