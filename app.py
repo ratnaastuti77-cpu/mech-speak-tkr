@@ -77,37 +77,59 @@ bank_wajib = {
 nama_siswa = st.text_input("Nama Siswa / Kelompok:", placeholder="Masukkan nama lengkap atau nama kelompok...")
 jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()))
 
-# Inisialisasi soal acak
+# Inisialisasi soal acak & penghitung soal
 if "soal_sekarang" not in st.session_state or st.session_state.get("jurusan_aktif") != jurusan:
     st.session_state.soal_sekarang = random.choice(bank_wajib[jurusan])
     st.session_state.jurusan_aktif = jurusan
+    st.session_state.nomor_soal = 1
+    st.session_state.hasil_terakhir = None
+
+# Tampilkan hasil nilai soal sebelumnya (jika baru saja menjawab)
+if st.session_state.get("hasil_terakhir"):
+    hasil = st.session_state.hasil_terakhir
+    st.markdown(f"### 🏆 Skor Soal Sebelumnya ({hasil['nama']}): **{hasil['skor']} / 100**")
+    if hasil["skor"] == 100:
+        st.success(f"🎉 Sempurna! Jawabanmu (`{hasil['jawaban']}`) 100% tepat! Sekarang lanjut soal berikutnya di bawah.")
+        st.balloons()
+    elif hasil["skor"] >= 75:
+        st.warning(f"👍 Hampir sempurna! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
+    else:
+        st.error(f"💪 Belum tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
 
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
-    if st.button("🔀 Acak Soal Berikutnya", use_container_width=True):
+    if st.button("🔀 Lewati / Acak Soal", use_container_width=True):
         st.session_state.soal_sekarang = random.choice(bank_wajib[jurusan])
+        st.session_state.nomor_soal += 1
+        st.session_state.hasil_terakhir = None
         st.rerun()
 
 with col_btn2:
     if st.button("✨ Buat Soal Unik AI", use_container_width=True):
-        with st.spinner("Gemini membuat soal pendek khusus untukmu..."):
-            res = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=f"Buatkan 1 kalimat instruksi kerja sangat sederhana dalam Bahasa Inggris (3-5 kata saja) untuk siswa SMK jurusan {jurusan}. Berikan HANYA kalimat Bahasa Inggrisnya saja tanpa tanda kutip."
-            )
-            kalimat_baru = res.text.strip()
-            st.session_state.soal_sekarang = {
-                "tipe": "Listen & Write (AI Unique)",
-                "audio": kalimat_baru,
-                "kunci": kalimat_baru
-            }
-            st.rerun()
+        with st.spinner("Membuat soal khusus untukmu..."):
+            try:
+                res = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=f"Buatkan 1 kalimat instruksi kerja sangat sederhana dalam Bahasa Inggris (3-5 kata saja) untuk siswa SMK jurusan {jurusan}. Berikan HANYA kalimat Bahasa Inggrisnya saja tanpa tanda kutip."
+                )
+                kalimat_baru = res.text.strip()
+                st.session_state.soal_sekarang = {
+                    "tipe": "Listen & Write (AI Unique)",
+                    "audio": kalimat_baru,
+                    "kunci": kalimat_baru
+                }
+                st.session_state.nomor_soal += 1
+                st.session_state.hasil_terakhir = None
+                st.rerun()
+            except Exception:
+                st.warning("⚠️ Server AI sedang sibuk. Dialihkan ke Bank Soal Wajib!")
+                st.session_state.soal_sekarang = random.choice(bank_wajib[jurusan])
 
 soal = st.session_state.soal_sekarang
 
 # 2. Pemutar Audio (Normal & Mode Lambat)
 st.markdown("---")
-st.subheader(f"🎧 Tipe Tantangan: {soal['tipe']}")
+st.subheader(f"🎧 Soal #{st.session_state.nomor_soal} — {soal['tipe']}")
 
 if "Listen & Answer" in soal["tipe"]:
     st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1 kata)** dalam Bahasa Inggris!")
@@ -122,15 +144,19 @@ tts.write_to_fp(audio_fp)
 audio_fp.seek(0)
 st.audio(audio_fp, format="audio/mp3")
 
-# 3. Kolom Menulis Jawaban & Penilaian Otomatis
+# 3. Kolom Menulis Jawaban & Otomatis Lanjut Soal Berikutnya
 st.markdown("---")
 st.subheader("⌨️ Tulis Jawabanmu")
-jawaban_siswa = st.text_input("Ketik di sini:", placeholder="Tulis apa yang kamu dengar dalam Bahasa Inggris...")
+
+# Menggunakan form agar kolom ketik otomatis bersih saat submit & lanjut soal baru
+with st.form(key=f"form_soal_{st.session_state.nomor_soal}", clear_on_submit=True):
+    jawaban_siswa = st.text_input("Ketik di sini:", placeholder="Tulis apa yang kamu dengar dalam Bahasa Inggris...")
+    submit_btn = st.form_submit_button("✅ Kirim Jawaban & Lanjut Soal Berikutnya", type="primary", use_container_width=True)
 
 def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
-if st.button("✅ Periksa Jawaban & Lihat Skor", type="primary", use_container_width=True):
+if submit_btn:
     if not nama_siswa.strip():
         st.warning("⚠️ Isi **Nama Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
     elif not jawaban_siswa.strip():
@@ -145,21 +171,26 @@ if st.button("✅ Periksa Jawaban & Lihat Skor", type="primary", use_container_w
         # Simpan nilai ke rekap bersama
         rekap_kelas.append({
             "Nama": nama_siswa.strip().title(),
-            "Jurusan": jurusan.split(" ")[0],
+            "Jurusan": jurusan.split(" "),
             "Soal": soal["audio"],
             "Jawaban Siswa": jawaban_siswa.strip(),
             "Skor": skor
         })
         
-        st.markdown(f"### 🏆 Skor {nama_siswa.strip().title()}: **{skor} / 100**")
+        # Simpan hasil untuk ditampilkan di bagian atas setelah pindah soal
+        st.session_state.hasil_terakhir = {
+            "nama": nama_siswa.strip().title(),
+            "skor": skor,
+            "jawaban": jawaban_siswa.strip(),
+            "kunci": soal["kunci"]
+        }
         
-        if skor == 100:
-            st.success("🎉 Sempurna! Ejaan (*spelling*) dan pendengaranmu 100% tepat!")
-            st.balloons()
-        elif skor >= 75:
-            st.warning(f"👍 Hampir sempurna! Ada sedikit perbedaan huruf.\n\n**Kunci Jawaban:** `{soal['kunci']}`")
-        else:
-            st.error(f"💪 Terus berlatih! Dengarkan lagi audionya.\n\n**Teks Audio Asli:** `{soal['audio']}`\n\n**Kunci Jawaban:** `{soal['kunci']}`")
+        # Otomatis pilih soal baru yang berbeda dari soal sebelumnya
+        pilihan_soal = [s for s in bank_wajib[jurusan] if s["audio"] != soal["audio"]]
+        st.session_state.soal_sekarang = random.choice(pilihan_soal) if pilihan_soal else random.choice(bank_wajib[jurusan])
+        st.session_state.nomor_soal += 1
+        
+        st.rerun()
 
 # 4. Panel Rekap Nilai & Leaderboard untuk Pembina
 st.markdown("---")
@@ -167,25 +198,3 @@ with st.expander("📊 Rekap Nilai & Papan Peringkat Kelas (Review Pembina)"):
     if len(rekap_kelas) > 0:
         df = pd.DataFrame(rekap_kelas)
         
-        # Ringkasan total skor per siswa
-        leaderboard = df.groupby(["Nama", "Jurusan"], as_index=False).agg(
-            Jumlah_Soal=("Skor", "count"),
-            Rata_Rata=("Skor", "mean"),
-            Total_Poin=("Skor", "sum")
-        ).sort_values(by="Total_Poin", ascending=False)
-        leaderboard["Rata_Rata"] = leaderboard["Rata_Rata"].round(1)
-        
-        st.subheader("🏆 Klasemen Sementara")
-        st.dataframe(leaderboard, use_container_width=True, hide_index=True)
-        
-        # Tombol Download ke Excel/CSV
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Semua Detail Jawaban & Nilai (.CSV)",
-            data=csv,
-            file_name="rekap_listen_and_write.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    else:
-        st.info("Belum ada siswa yang mengirimkan jawaban. Nilai akan otomatis muncul di sini saat siswa menekan tombol Periksa Jawaban.")
