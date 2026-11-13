@@ -17,10 +17,18 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 # Bank Soal Wajib (Akan Diacak untuk Setiap Siswa)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
-        {"tipe": "Repeat Sentence", "audio": "WRENCH.", "kunci": "WRENCH."},
-        {"tipe": "Repeat Sentence", "audio": "CHECK THE ENGINE OIL LEVEL.", "kunci": "CHECK THE ENGINE OIL LEVEL."},
-        {"tipe": "Answer Short Question", "audio": "What component in a car engine ignites the air and fuel mixture?", "kunci": "Spark plug (busi)."},
-        {"tipe": "Answer Short Question", "audio": "What tool do mechanics use to tighten bolts and nuts?", "kunci": "Wrench / Spanner (kunci pas)."}
+        bank_wajib = {
+    "TKR (Teknik Kendaraan Ringan) - Basic": [
+        {"tipe": "Repeat Sentence", "audio": "TIRE.", "kunci": "TIRE."},
+        {"tipe": "Repeat Sentence", "audio": "ENGINE.", "kunci": "ENGINE."},
+        {"tipe": "Repeat Sentence", "audio": "OPEN THE HOOD.", "kunci": "OPEN THE HOOD."},
+        {"tipe": "Repeat Sentence", "audio": "CHECK THE TIRE PRESSURE.", "kunci": "CHECK THE TIRE PRESSURE."},
+        {"tipe": "Repeat Sentence", "audio": "CHANGE THE ENGINE OIL.", "kunci": "CHANGE THE ENGINE OIL."},
+        {"tipe": "Answer Short Question", "audio": "What do we use to stop a car?", "kunci": "Brake (rem)."},
+        {"tipe": "Answer Short Question", "audio": "What part touches the road?", "kunci": "Tire / Wheel (ban / roda)."},
+        {"tipe": "Answer Short Question", "audio": "Where do we put gasoline in a car?", "kunci": "Fuel tank (tangki bahan bakar)."},
+        {"tipe": "Answer Short Question", "audio": "What do we turn on to see at night?", "kunci": "Headlights (lampu depan)."},
+        {"tipe": "Answer Short Question", "audio": "What liquid cools the car engine?", "kunci": "Coolant / Water (air radiator)."}
     ],
     "TSM (Teknik Sepeda Motor)": [
         {"tipe": "Repeat Sentence", "audio": "Please adjust the drive chain tension and check the tire pressure.", "kunci": "Please adjust the drive chain tension and check the tire pressure."},
