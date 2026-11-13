@@ -178,4 +178,3 @@ if st.session_state.index_soal < total_soal:
     st.progress(idx / total_soal)
     st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
 
-    if "Listen & Answer" in soal["tipe"]:
