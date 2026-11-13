@@ -6,9 +6,9 @@ import io
 import random
 
 # Konfigurasi Halaman
-st.set_page_config(page_title="VOCA-PEARSON AI", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="LISTEN & SHADOW", page_icon="🎓", layout="centered")
 
-st.title("🎓 VOCA-PEARSON AI")
+st.title("🎓 LISTEN & SHADOW")
 st.caption("Simulasi Asesmen Speaking Kejuruan Berbasis Format Pearson Test")
 
 # Inisialisasi Gemini API
