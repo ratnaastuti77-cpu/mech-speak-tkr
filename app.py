@@ -160,3 +160,4 @@ if st.session_state.index_soal < total_soal:
             bersih_siswa = bersihkan_teks(jawaban_siswa)
             bersih_kunci = bersihkan_teks(soal["kunci"])
 
+            kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
