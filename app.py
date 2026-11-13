@@ -3,22 +3,22 @@ from gtts import gTTS
 import io
 import difflib
 import re
-import pandas as pd
+import csv
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
 
 st.title("✍️ LISTEN & WRITE")
-st.caption("Latihan Listening & Spelling Kejuruan English Club (10 Soal / Jurusan)")
+st.caption("Asesmen Listening & Spelling Kejuruan English Club (10 Soal / Jurusan)")
 
-# Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
+# Penyimpanan Rekap Nilai Bersama di Server (Real-Time)
 @st.cache_resource
 def get_rekap_nilai():
     return []
 
 rekap_kelas = get_rekap_nilai()
 
-# Bank Soal Wajib (Masing-masing 10 Soal Berurutan per Jurusan)
+# Bank Soal Wajib (10 Soal Berurutan per Jurusan: Mudah -> Sedang)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
         {"tipe": "Listen & Write (Word)", "audio": "TIRE.", "kunci": "TIRE."},
@@ -95,20 +95,20 @@ bank_wajib = {
 }
 
 # 1. Input Identitas & Jurusan Siswa
-nama_siswa = st.text_input("Nama Siswa / Kelompok:", placeholder="Masukkan nama lengkap atau nama kelompok...")
+nama_siswa = st.text_input("Nama Lengkap Siswa / Kelompok:", placeholder="Contoh: Budi Santoso (atau Kelompok 1)")
 jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()))
 
 daftar_soal = bank_wajib[jurusan]
 total_soal = len(daftar_soal)
 
-# Inisialisasi urutan soal (mulai dari index 0 / Soal ke-1)
+# Inisialisasi Sesi Siswa (Mulai berurutan dari Soal Nomor 1)
 if "index_soal" not in st.session_state or st.session_state.get("jurusan_aktif") != jurusan:
     st.session_state.index_soal = 0
     st.session_state.jurusan_aktif = jurusan
     st.session_state.hasil_terakhir = None
     st.session_state.skor_sesi = []
 
-# Tampilkan hasil nilai soal sebelumnya (jika baru saja menjawab)
+# Menampilkan Umpan Balik Skor Soal Sebelumnya
 if st.session_state.get("hasil_terakhir"):
     hasil = st.session_state.hasil_terakhir
     st.markdown(f"### 🏆 Skor Soal #{hasil['nomor']} ({hasil['nama']}): **{hasil['skor']} / 100**")
@@ -116,20 +116,19 @@ if st.session_state.get("hasil_terakhir"):
         st.success(f"🎉 Sempurna! Jawabanmu (`{hasil['jawaban']}`) 100% tepat!")
         st.balloons()
     elif hasil["skor"] >= 75:
-        st.warning(f"👍 Hampir sempurna! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
+        st.warning(f"👍 Hampir tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
     else:
         st.error(f"💪 Belum tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
 
 def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
-# Cek apakah semua 10 soal sudah selesai dikerjakan
+# 2. Area Mengerjakan Soal (Berurutan Nomor 1 sampai 10)
 if st.session_state.index_soal < total_soal:
     idx = st.session_state.index_soal
     soal = daftar_soal[idx]
 
-    # Progress bar & info nomor soal
-    st.progress((idx) / total_soal)
+    st.progress(idx / total_soal)
     st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
 
     if "Listen & Answer" in soal["tipe"]:
@@ -145,18 +144,22 @@ if st.session_state.index_soal < total_soal:
     audio_fp.seek(0)
     st.audio(audio_fp, format="audio/mp3")
 
-    # Kolom Menulis Jawaban & Otomatis Lanjut Soal Berikutnya
     st.markdown("---")
     with st.form(key=f"form_soal_{idx}", clear_on_submit=True):
-        jawaban_siswa = st.text_input("⌨️ Ketik jawabanmu di sini:", placeholder="Tulis apa yang kamu dengar dalam Bahasa Inggris...")
-        submit_btn = st.form_submit_button("✅ Kirim Jawaban & Lanjut", type="primary", use_container_width=True)
+        jawaban_siswa = st.text_input("⌨️ Ketik jawabanmu di sini:", placeholder="Tulis jawaban dalam Bahasa Inggris...")
+        submit_btn = st.form_submit_button("✅ Kirim Jawaban & Lanjut Soal Berikutnya", type="primary", use_container_width=True)
 
     if submit_btn:
         if not nama_siswa.strip():
-            st.warning("⚠️ Isi **Nama Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
+            st.warning("⚠️ Isi **Nama Lengkap Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
         elif not jawaban_siswa.strip():
             st.warning("⚠️ Silakan ketik jawabanmu terlebih dahulu!")
         else:
             bersih_siswa = bersihkan_teks(jawaban_siswa)
             bersih_kunci = bersihkan_teks(soal["kunci"])
+
+            kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
+            skor = round(kemiripan * 100)
+
+            nama_bersih = nama_siswa.strip().title()
 
