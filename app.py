@@ -3,19 +3,22 @@ from gtts import gTTS
 import io
 import difflib
 import re
-import csv
+import pandas as pd
 
+# Konfigurasi Halaman
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
 
 st.title("✍️ LISTEN & WRITE")
-st.caption("Asesmen Listening & Spelling Kejuruan English Club (10 Soal Berurutan / Jurusan)")
+st.caption("Latihan Listening & Spelling Kejuruan English Club (10 Soal / Jurusan)")
 
+# Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
 @st.cache_resource
 def get_rekap_nilai():
     return []
 
 rekap_kelas = get_rekap_nilai()
 
+# Bank Soal Wajib (Masing-masing 10 Soal Berurutan per Jurusan)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
         {"tipe": "Listen & Write (Word)", "audio": "TIRE.", "kunci": "TIRE."},
@@ -91,90 +94,70 @@ bank_wajib = {
     ]
 }
 
-@st.cache_data(show_spinner=False)
-def buat_audio_mp3(teks, lambat=False):
-    tts = gTTS(text=teks, lang='en', slow=lambat)
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    fp.seek(0)
-    return fp.read()
-
-def bersihkan_teks(teks):
-    return re.sub(r'[^\w\s]', '', teks).strip().lower()
-
-nama_siswa = st.text_input("Nama Lengkap Siswa / Kelompok:", key="input_nama", placeholder="Contoh: Budi Santoso (atau Kelompok 1)")
-jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()), key="pilih_jurusan")
+# 1. Input Identitas & Jurusan Siswa
+nama_siswa = st.text_input("Nama Siswa / Kelompok:", placeholder="Masukkan nama lengkap atau nama kelompok...")
+jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()))
 
 daftar_soal = bank_wajib[jurusan]
 total_soal = len(daftar_soal)
 
+# Inisialisasi urutan soal (mulai dari index 0 / Soal ke-1)
 if "index_soal" not in st.session_state or st.session_state.get("jurusan_aktif") != jurusan:
     st.session_state.index_soal = 0
     st.session_state.jurusan_aktif = jurusan
     st.session_state.hasil_terakhir = None
     st.session_state.skor_sesi = []
-    st.session_state.pesan_error = ""
 
-def proses_jawaban():
-    nama_val = st.session_state.get("input_nama", "").strip()
-    jawaban_val = st.session_state.get("input_jawaban", "").strip()
-    idx_sekarang = st.session_state.index_soal
-
-    if not nama_val:
-        st.session_state.pesan_error = "⚠️ Isi **Nama Lengkap Siswa / Kelompok** di bagian atas terlebih dahulu!"
-        return
-    if not jawaban_val:
-        st.session_state.pesan_error = "⚠️ Silakan ketik jawabanmu terlebih dahulu!"
-        return
-
-    st.session_state.pesan_error = ""
-    soal_sekarang = daftar_soal[idx_sekarang]
-
-    bersih_siswa = bersihkan_teks(jawaban_val)
-    bersih_kunci = bersihkan_teks(soal_sekarang["kunci"])
-
-    kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
-    skor = round(kemiripan * 100)
-    nama_bersih = nama_val.title()
-
-    rekap_kelas.append({
-        "nama": nama_bersih,
-        "jurusan": jurusan,
-        "no_soal": idx_sekarang + 1,
-        "soal": soal_sekarang["audio"],
-        "jawaban": jawaban_val,
-        "skor": skor
-    })
-
-    st.session_state.skor_sesi.append(skor)
-    st.session_state.hasil_terakhir = {
-        "nomor": idx_sekarang + 1,
-        "nama": nama_bersih,
-        "skor": skor,
-        "jawaban": jawaban_val,
-        "kunci": soal_sekarang["kunci"]
-    }
-
-    st.session_state.index_soal += 1
-    st.session_state.input_jawaban = ""
-
-if st.session_state.get("pesan_error"):
-    st.warning(st.session_state.pesan_error)
-
+# Tampilkan hasil nilai soal sebelumnya (jika baru saja menjawab)
 if st.session_state.get("hasil_terakhir"):
     hasil = st.session_state.hasil_terakhir
     st.markdown(f"### 🏆 Skor Soal #{hasil['nomor']} ({hasil['nama']}): **{hasil['skor']} / 100**")
     if hasil["skor"] == 100:
         st.success(f"🎉 Sempurna! Jawabanmu (`{hasil['jawaban']}`) 100% tepat!")
+        st.balloons()
     elif hasil["skor"] >= 75:
-        st.warning(f"👍 Hampir tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
+        st.warning(f"👍 Hampir sempurna! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
     else:
         st.error(f"💪 Belum tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
 
+def bersihkan_teks(teks):
+    return re.sub(r'[^\w\s]', '', teks).strip().lower()
+
+# Cek apakah semua 10 soal sudah selesai dikerjakan
 if st.session_state.index_soal < total_soal:
     idx = st.session_state.index_soal
     soal = daftar_soal[idx]
 
-    st.progress(idx / total_soal)
+    # Progress bar & info nomor soal
+    st.progress((idx) / total_soal)
     st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
 
+    if "Listen & Answer" in soal["tipe"]:
+        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1–2 kata)** dalam Bahasa Inggris!")
+    else:
+        st.info("👂 Dengarkan audio berikut dengan saksama, lalu **ketik persis kata/kalimat yang kamu dengar**!")
+
+    kecepatan = st.checkbox("🐢 Putar Audio Lebih Lambat (Slow Mode)", key=f"slow_{idx}")
+
+    tts = gTTS(text=soal["audio"], lang='en', slow=kecepatan)
+    audio_fp = io.BytesIO()
+    tts.write_to_fp(audio_fp)
+    audio_fp.seek(0)
+    st.audio(audio_fp, format="audio/mp3")
+
+    # Kolom Menulis Jawaban & Otomatis Lanjut Soal Berikutnya
+    st.markdown("---")
+    with st.form(key=f"form_soal_{idx}", clear_on_submit=True):
+        jawaban_siswa = st.text_input("⌨️ Ketik jawabanmu di sini:", placeholder="Tulis apa yang kamu dengar dalam Bahasa Inggris...")
+        submit_btn = st.form_submit_button("✅ Kirim Jawaban & Lanjut", type="primary", use_container_width=True)
+
+    if submit_btn:
+        if not nama_siswa.strip():
+            st.warning("⚠️ Isi **Nama Siswa / Kelompok** di bagian atas terlebih dahulu agar nilaimu tercatat!")
+        elif not jawaban_siswa.strip():
+            st.warning("⚠️ Silakan ketik jawabanmu terlebih dahulu!")
+        else:
+            bersih_siswa = bersihkan_teks(jawaban_siswa)
+            bersih_kunci = bersihkan_teks(soal["kunci"])
+
+            kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
