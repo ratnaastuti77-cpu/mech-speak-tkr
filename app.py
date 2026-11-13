@@ -9,7 +9,7 @@ import pandas as pd
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
 
 st.title("✍️ LISTEN & WRITE")
-st.caption("Latihan Listening & Spelling Kejuruan English Club (10 Soal / Jurusan)")
+st.caption("Latihan Listening & Spelling Kejuruan English Club")
 
 # Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
 @st.cache_resource
@@ -18,79 +18,53 @@ def get_rekap_nilai():
 
 rekap_kelas = get_rekap_nilai()
 
-# Bank Soal Wajib (Masing-masing 10 Soal Berurutan per Jurusan)
+# Bank Soal Wajib (Berurutan dari Mudah ke Sedang untuk Semua Jurusan)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
         {"tipe": "Listen & Write (Word)", "audio": "TIRE.", "kunci": "TIRE."},
         {"tipe": "Listen & Write (Word)", "audio": "ENGINE.", "kunci": "ENGINE."},
-        {"tipe": "Listen & Write (Word)", "audio": "BATTERY.", "kunci": "BATTERY."},
         {"tipe": "Listen & Write (Sentence)", "audio": "OPEN THE HOOD.", "kunci": "OPEN THE HOOD."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE TIRE PRESSURE.", "kunci": "CHECK THE TIRE PRESSURE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CHANGE THE ENGINE OIL.", "kunci": "CHANGE THE ENGINE OIL."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "TEST THE CAR BRAKES.", "kunci": "TEST THE CAR BRAKES."},
         {"tipe": "Listen & Answer", "audio": "What do we use to stop a car?", "kunci": "Brake"},
         {"tipe": "Listen & Answer", "audio": "What part touches the road?", "kunci": "Tire"},
         {"tipe": "Listen & Answer", "audio": "What liquid cools the car engine?", "kunci": "Coolant"}
     ],
     "TSM (Teknik Sepeda Motor)": [
         {"tipe": "Listen & Write (Word)", "audio": "HELMET.", "kunci": "HELMET."},
-        {"tipe": "Listen & Write (Word)", "audio": "CHAIN.", "kunci": "CHAIN."},
-        {"tipe": "Listen & Write (Word)", "audio": "MIRROR.", "kunci": "MIRROR."},
         {"tipe": "Listen & Write (Sentence)", "audio": "START THE ENGINE.", "kunci": "START THE ENGINE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE CHAIN.", "kunci": "CHECK THE CHAIN."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CLEAN THE AIR FILTER.", "kunci": "CLEAN THE AIR FILTER."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE BRAKE FLUID.", "kunci": "CHECK THE BRAKE FLUID."},
         {"tipe": "Listen & Answer", "audio": "What do we wear on our head before riding?", "kunci": "Helmet"},
-        {"tipe": "Listen & Answer", "audio": "What do we use to see behind us?", "kunci": "Mirror"},
-        {"tipe": "Listen & Answer", "audio": "What liquid protects the motorcycle engine?", "kunci": "Oil"}
+        {"tipe": "Listen & Answer", "audio": "What do we use to see behind us?", "kunci": "Mirror"}
     ],
     "AK (Akuntansi)": [
         {"tipe": "Listen & Write (Word)", "audio": "INVOICE.", "kunci": "INVOICE."},
-        {"tipe": "Listen & Write (Word)", "audio": "RECEIPT.", "kunci": "RECEIPT."},
-        {"tipe": "Listen & Write (Word)", "audio": "PROFIT.", "kunci": "PROFIT."},
         {"tipe": "Listen & Write (Sentence)", "audio": "COUNT THE MONEY.", "kunci": "COUNT THE MONEY."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE REPORT.", "kunci": "CHECK THE REPORT."},
         {"tipe": "Listen & Write (Sentence)", "audio": "SAVE THE RECEIPT.", "kunci": "SAVE THE RECEIPT."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "RECORD EVERY TRANSACTION.", "kunci": "RECORD EVERY TRANSACTION."},
-        {"tipe": "Listen & Answer", "audio": "What tool do we use to calculate numbers?", "kunci": "Calculator"},
-        {"tipe": "Listen & Answer", "audio": "Where do we keep business money safely?", "kunci": "Bank"},
-        {"tipe": "Listen & Answer", "audio": "What paper proves a customer has paid?", "kunci": "Receipt"}
+        {"tipe": "Listen & Answer", "audio": "What tool do we use to calculate numbers?", "kunci": "Calculator"}
     ],
     "TKJ (Teknik Komputer dan Jaringan)": [
         {"tipe": "Listen & Write (Word)", "audio": "ROUTER.", "kunci": "ROUTER."},
-        {"tipe": "Listen & Write (Word)", "audio": "SERVER.", "kunci": "SERVER."},
-        {"tipe": "Listen & Write (Word)", "audio": "CABLE.", "kunci": "CABLE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "RESTART THE COMPUTER.", "kunci": "RESTART THE COMPUTER."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE CABLE.", "kunci": "CHECK THE CABLE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CONNECT TO WIFI.", "kunci": "CONNECT TO WIFI."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "INSTALL THE ANTIVIRUS.", "kunci": "INSTALL THE ANTIVIRUS."},
-        {"tipe": "Listen & Answer", "audio": "What do we use to type on a computer?", "kunci": "Keyboard"},
-        {"tipe": "Listen & Answer", "audio": "What device moves the cursor on the screen?", "kunci": "Mouse"},
-        {"tipe": "Listen & Answer", "audio": "What software protects a computer from viruses?", "kunci": "Antivirus"}
+        {"tipe": "Listen & Answer", "audio": "What do we use to type on a computer?", "kunci": "Keyboard"}
     ],
     "DPB (Desain dan Produksi Busana)": [
         {"tipe": "Listen & Write (Word)", "audio": "FABRIC.", "kunci": "FABRIC."},
-        {"tipe": "Listen & Write (Word)", "audio": "NEEDLE.", "kunci": "NEEDLE."},
-        {"tipe": "Listen & Write (Word)", "audio": "BUTTON.", "kunci": "BUTTON."},
         {"tipe": "Listen & Write (Sentence)", "audio": "CUT THE PATTERN.", "kunci": "CUT THE PATTERN."},
         {"tipe": "Listen & Write (Sentence)", "audio": "MEASURE THE SIZE.", "kunci": "MEASURE THE SIZE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "SEW THE BUTTON.", "kunci": "SEW THE BUTTON."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "IRON THE CLOTHES.", "kunci": "IRON THE CLOTHES."},
-        {"tipe": "Listen & Answer", "audio": "What sharp tool is used to cut fabric?", "kunci": "Scissors"},
-        {"tipe": "Listen & Answer", "audio": "What machine is used to sew clothes?", "kunci": "Sewing machine"},
-        {"tipe": "Listen & Answer", "audio": "What material is used to make a shirt?", "kunci": "Fabric"}
+        {"tipe": "Listen & Answer", "audio": "What sharp tool is used to cut fabric?", "kunci": "Scissors"}
     ],
     "APHP (Agribisnis Pengolahan Hasil Pertanian)": [
         {"tipe": "Listen & Write (Word)", "audio": "GLOVES.", "kunci": "GLOVES."},
-        {"tipe": "Listen & Write (Word)", "audio": "FRESH.", "kunci": "FRESH."},
-        {"tipe": "Listen & Write (Word)", "audio": "PACKAGE.", "kunci": "PACKAGE."},
         {"tipe": "Listen & Write (Sentence)", "audio": "WASH THE FRUIT.", "kunci": "WASH THE FRUIT."},
         {"tipe": "Listen & Write (Sentence)", "audio": "WEAR A HAIRNET.", "kunci": "WEAR A HAIRNET."},
         {"tipe": "Listen & Write (Sentence)", "audio": "SEAL THE PACKAGE.", "kunci": "SEAL THE PACKAGE."},
-        {"tipe": "Listen & Write (Sentence)", "audio": "CHECK THE EXPIRY DATE.", "kunci": "CHECK THE EXPIRY DATE."},
-        {"tipe": "Listen & Answer", "audio": "Where do we store food to keep it cold?", "kunci": "Refrigerator"},
-        {"tipe": "Listen & Answer", "audio": "What do we wear on our hands when processing food?", "kunci": "Gloves"},
-        {"tipe": "Listen & Answer", "audio": "What process heats milk to kill bacteria?", "kunci": "Pasteurization"}
+        {"tipe": "Listen & Answer", "audio": "Where do we store food to keep it cold?", "kunci": "Refrigerator"}
     ]
 }
 
@@ -123,7 +97,7 @@ if st.session_state.get("hasil_terakhir"):
 def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
-# Cek apakah semua 10 soal sudah selesai dikerjakan
+# Cek apakah semua soal sudah selesai dikerjakan
 if st.session_state.index_soal < total_soal:
     idx = st.session_state.index_soal
     soal = daftar_soal[idx]
@@ -133,7 +107,7 @@ if st.session_state.index_soal < total_soal:
     st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
 
     if "Listen & Answer" in soal["tipe"]:
-        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1–2 kata)** dalam Bahasa Inggris!")
+        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1 kata)** dalam Bahasa Inggris!")
     else:
         st.info("👂 Dengarkan audio berikut dengan saksama, lalu **ketik persis kata/kalimat yang kamu dengar**!")
 
@@ -161,3 +135,69 @@ if st.session_state.index_soal < total_soal:
             bersih_kunci = bersihkan_teks(soal["kunci"])
 
             kemiripan = difflib.SequenceMatcher(None, bersih_siswa, bersih_kunci).ratio()
+            skor = round(kemiripan * 100)
+
+            # Simpan nilai ke rekap bersama
+            rekap_kelas.append({
+                "Nama": nama_siswa.strip().title(),
+                "Jurusan": jurusan.split(" "),
+                "No_Soal": idx + 1,
+                "Soal": soal["audio"],
+                "Jawaban Siswa": jawaban_siswa.strip(),
+                "Skor": skor
+            })
+
+            st.session_state.skor_sesi.append(skor)
+            st.session_state.hasil_terakhir = {
+                "nomor": idx + 1,
+                "nama": nama_siswa.strip().title(),
+                "skor": skor,
+                "jawaban": jawaban_siswa.strip(),
+                "kunci": soal["kunci"]
+            }
+
+            # Maju ke nomor soal berikutnya secara berurutan
+            st.session_state.index_soal += 1
+            st.rerun()
+
+else:
+    # Tampilan saat seluruh soal selesai dikerjakan
+    st.progress(1.0)
+    st.markdown("---")
+    rata_akhir = round(sum(st.session_state.skor_sesi) / total_soal, 1) if st.session_state.skor_sesi else 0
+    total_poin = sum(st.session_state.skor_sesi)
+
+    st.success(f"🎊 **Selamat, {nama_siswa.strip().title() if nama_siswa else 'Kamu'}!** Semua **{total_soal} soal** jurusan **{jurusan}** telah selesai dikerjakan!")
+    st.metric(label="Total Poin / Rata-Rata Akhir", value=f"{total_poin} Poin (Rata-rata: {rata_akhir})")
+
+    if st.button("🔄 Ulangi dari Soal Nomor 1", use_container_width=True):
+        st.session_state.index_soal = 0
+        st.session_state.hasil_terakhir = None
+        st.session_state.skor_sesi = []
+        st.rerun()
+
+# Panel Rekap Nilai & Leaderboard untuk Pembina
+st.markdown("---")
+with st.expander("📊 Rekap Nilai & Papan Peringkat Kelas (Review Pembina)"):
+    if len(rekap_kelas) > 0:
+        df = pd.DataFrame(rekap_kelas)
+
+        leaderboard = df.groupby(["Nama", "Jurusan"], as_index=False).agg(
+            Jumlah_Soal=("Skor", "count"),
+            Rata_Rata=("Skor", "mean"),
+            Total_Poin=("Skor", "sum")
+        ).sort_values(by="Total_Poin", ascending=False)
+        leaderboard["Rata_Rata"] = leaderboard["Rata_Rata"].round(1)
+
+        st.subheader("🏆 Klasemen Sementara")
+        st.dataframe(leaderboard, use_container_width=True, hide_index=True)
+
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Semua Detail Jawaban & Nilai (.CSV)",
+            data=csv,
+            file_name="rekap_listen_and_write.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    else:
