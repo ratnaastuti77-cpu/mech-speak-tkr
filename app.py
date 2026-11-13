@@ -5,20 +5,17 @@ import difflib
 import re
 import csv
 
-# Konfigurasi Halaman
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
 
 st.title("✍️ LISTEN & WRITE")
 st.caption("Asesmen Listening & Spelling Kejuruan English Club (10 Soal Berurutan / Jurusan)")
 
-# Penyimpanan Rekap Nilai Bersama di Server (Real-Time)
 @st.cache_resource
 def get_rekap_nilai():
     return []
 
 rekap_kelas = get_rekap_nilai()
 
-# Bank Soal Wajib (10 Soal Berurutan dari Nomor 1 sampai 10 per Jurusan)
 bank_wajib = {
     "TKR (Teknik Kendaraan Ringan)": [
         {"tipe": "Listen & Write (Word)", "audio": "TIRE.", "kunci": "TIRE."},
@@ -97,14 +94,12 @@ bank_wajib = {
 def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
-# 1. Input Identitas & Jurusan Siswa
 nama_siswa = st.text_input("Nama Lengkap Siswa / Kelompok:", key="input_nama", placeholder="Contoh: Budi Santoso (atau Kelompok 1)")
 jurusan = st.selectbox("Pilih Jurusan:", list(bank_wajib.keys()), key="pilih_jurusan")
 
 daftar_soal = bank_wajib[jurusan]
 total_soal = len(daftar_soal)
 
-# Inisialisasi Sesi Siswa (Berurutan dari Soal Nomor 1)
 if "index_soal" not in st.session_state or st.session_state.get("jurusan_aktif") != jurusan:
     st.session_state.index_soal = 0
     st.session_state.jurusan_aktif = jurusan
@@ -112,7 +107,6 @@ if "index_soal" not in st.session_state or st.session_state.get("jurusan_aktif")
     st.session_state.skor_sesi = []
     st.session_state.pesan_error = ""
 
-# Callback Saat Tombol Kirim Diklik (Otomatis Lanjut ke Nomor Berikutnya)
 def proses_jawaban():
     nama_val = st.session_state.get("input_nama", "").strip()
     jawaban_val = st.session_state.get("input_jawaban", "").strip()
@@ -135,7 +129,6 @@ def proses_jawaban():
     skor = round(kemiripan * 100)
     nama_bersih = nama_val.title()
 
-    # Simpan ke rekap pembina
     rekap_kelas.append({
         "nama": nama_bersih,
         "jurusan": jurusan,
@@ -154,14 +147,12 @@ def proses_jawaban():
         "kunci": soal_sekarang["kunci"]
     }
 
-    # Pindah ke nomor soal berikutnya & kosongkan kotak ketik
     st.session_state.index_soal += 1
     st.session_state.input_jawaban = ""
 
 if st.session_state.get("pesan_error"):
     st.warning(st.session_state.pesan_error)
 
-# Umpan Balik Skor Soal Sebelumnya
 if st.session_state.get("hasil_terakhir"):
     hasil = st.session_state.hasil_terakhir
     st.markdown(f"### 🏆 Skor Soal #{hasil['nomor']} ({hasil['nama']}): **{hasil['skor']} / 100**")
@@ -172,4 +163,15 @@ if st.session_state.get("hasil_terakhir"):
     else:
         st.error(f"💪 Belum tepat! Jawabanmu: `{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`")
 
-# 2. Area Mengerjakan Soal (Berurutan Nomor 1 sampai Selesai)
+if st.session_state.index_soal < total_soal:
+    idx = st.session_state.index_soal
+    soal = daftar_soal[idx]
+
+    st.progress(idx / total_soal)
+    st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
+
+    if "Listen & Answer" in soal["tipe"]:
+        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1–2 kata)** dalam Bahasa Inggris!")
+    else:
+        st.info("👂 Dengarkan audio berikut dengan saksama, lalu **ketik persis kata/kalimat yang kamu dengar**!")
+
