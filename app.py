@@ -1,5 +1,4 @@
 import streamlit as st
-from google import genai
 from gtts import gTTS
 import io
 import difflib
@@ -11,9 +10,6 @@ st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="cent
 
 st.title("✍️ LISTEN & WRITE")
 st.caption("Latihan Listening & Spelling Kejuruan English Club")
-
-# Inisialisasi Gemini API
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
 @st.cache_resource
@@ -89,6 +85,7 @@ if "indeks_soal" not in st.session_state or st.session_state.get("jurusan_aktif"
     st.session_state.jurusan_aktif = jurusan
     st.session_state.riwayat_sesi = []
     st.session_state.hasil_terakhir = None
+    st.session_state.sudah_masuk_leaderboard = False
 
 # ==============================================================================
 # KONDISI A: SEMUA SOAL SUDAH SELESAI -> TAMPILKAN NILAI PEROLEHAN AKHIR
@@ -98,23 +95,21 @@ if st.session_state.indeks_soal >= total_soal:
     st.success(f"🎉 Selamat **{nama_siswa if nama_siswa else 'Siswa'}**! Kamu telah menyelesaikan semua **{total_soal} soal** jurusan **{jurusan}**.")
     st.balloons()
     
-    # Hitung nilai rata-rata akhir
     if st.session_state.riwayat_sesi:
         total_skor = sum(item["Skor"] for item in st.session_state.riwayat_sesi)
         nilai_akhir = round(total_skor / total_soal)
         
         st.markdown(f"## 🏆 Nilai Akhir Perolehan: **{nilai_akhir} / 100**")
         
-        # Tampilkan rincian jawaban per nomor soal
         st.subheader("📋 Rincian Hasil Pengerjaanmu:")
         df_sesi = pd.DataFrame(st.session_state.riwayat_sesi)
         st.dataframe(df_sesi, use_container_width=True, hide_index=True)
         
-        # Simpan nilai akhir ke Leaderboard Kelas (sekali per sesi selesai)
         if not st.session_state.get("sudah_masuk_leaderboard"):
+            kode_jurusan = jurusan.split(" ")
             rekap_kelas.append({
                 "Nama": nama_siswa.strip() if nama_siswa.strip() else "Tanpa Nama",
-                "Jurusan": jurusan.split(" "),
+                "Jurusan": kode_jurusan,
                 "Soal Selesai": f"{total_soal}/{total_soal}",
                 "Nilai Akhir": nilai_akhir
             })
@@ -134,10 +129,8 @@ else:
     idx = st.session_state.indeks_soal
     soal = daftar_soal[idx]
     
-    # Progress Bar Urutan Soal
     st.progress((idx) / total_soal, text=f"Progres Pengerjaan: Soal {idx + 1} dari {total_soal}")
 
-    # Tampilkan umpan balik soal sebelumnya (jika baru saja menjawab)
     if st.session_state.get("hasil_terakhir"):
         hasil = st.session_state.hasil_terakhir
         if hasil["skor"] == 100:
@@ -147,7 +140,6 @@ else:
         else:
             st.error(f"❌ Soal #{idx} Kurang Tepat (`{hasil['jawaban']}` | Kunci: `{hasil['kunci']}`) — Skor: **{hasil['skor']}**")
 
-    # Pemutar Audio
     st.markdown("---")
     st.subheader(f"🎧 Soal #{idx + 1} dari {total_soal} — {soal['tipe']}")
 
@@ -164,7 +156,6 @@ else:
     audio_fp.seek(0)
     st.audio(audio_fp, format="audio/mp3")
 
-    # Kolom Menulis Jawaban
     st.markdown("---")
     st.subheader("⌨️ Tulis Jawabanmu")
 
@@ -193,3 +184,12 @@ else:
             
             st.session_state.riwayat_sesi.append({
                 "No": idx + 1,
+                "Tipe": soal["tipe"],
+                "Jawaban Siswa": jawaban_siswa.strip(),
+                "Kunci Jawaban": soal["kunci"],
+                "Skor": skor
+            })
+            
+            st.session_state.indeks_soal += 1
+            st.rerun()
+
