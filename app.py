@@ -16,8 +16,7 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # Bank Soal Wajib (Akan Diacak untuk Setiap Siswa)
 bank_wajib = {
-   bank_wajib = {
-    "TKR (Teknik Kendaraan Ringan) - Basic": [
+       "TKR (Teknik Kendaraan Ringan) - Basic": [
         {"tipe": "Repeat Sentence", "audio": "TIRE.", "kunci": "TIRE."},
         {"tipe": "Repeat Sentence", "audio": "ENGINE.", "kunci": "ENGINE."},
         {"tipe": "Repeat Sentence", "audio": "OPEN THE HOOD.", "kunci": "OPEN THE HOOD."},
