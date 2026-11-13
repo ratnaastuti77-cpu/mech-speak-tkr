@@ -91,6 +91,14 @@ bank_wajib = {
     ]
 }
 
+@st.cache_data(show_spinner=False)
+def buat_audio_mp3(teks, lambat=False):
+    tts = gTTS(text=teks, lang='en', slow=lambat)
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    return fp.read()
+
 def bersihkan_teks(teks):
     return re.sub(r'[^\w\s]', '', teks).strip().lower()
 
@@ -171,7 +179,3 @@ if st.session_state.index_soal < total_soal:
     st.subheader(f"🎧 Soal {idx + 1} dari {total_soal} — {soal['tipe']}")
 
     if "Listen & Answer" in soal["tipe"]:
-        st.info("👂 Dengarkan pertanyaan berikut, lalu **ketik jawaban singkatnya (1–2 kata)** dalam Bahasa Inggris!")
-    else:
-        st.info("👂 Dengarkan audio berikut dengan saksama, lalu **ketik persis kata/kalimat yang kamu dengar**!")
-
