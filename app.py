@@ -9,7 +9,7 @@ import pandas as pd
 st.set_page_config(page_title="LISTEN & WRITE", page_icon="✍️", layout="centered")
 
 st.title("✍️ LISTEN & WRITE")
-st.caption("Latihan Listening & Spelling Kejuruan English Club")
+st.caption("Latihan Listening & Spelling")
 
 # Penyimpanan Rekap Nilai Bersama (Real-Time Leaderboard)
 @st.cache_resource
